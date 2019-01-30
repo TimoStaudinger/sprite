@@ -14,7 +14,7 @@ const Links = () => (
       <FontAwesomeIcon icon={faGithub} />
     </a>
     <a
-      href="https://twitter.com/TimoStaudinger/"
+      href="https://twitter.com/spritedotlink/"
       title="Sprite on Twitter"
       target="_new"
       className={styles.item}
