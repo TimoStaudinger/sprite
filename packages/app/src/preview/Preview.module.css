@@ -1,9 +1,15 @@
 .preview {
   flex: 1;
 
-  text-align: center;
   overflow: auto;
   height: calc(100% - 40px);
+  padding: 20px;
+  overflow: hidden;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
 
   background-color: #fafafa;
   background-image: linear-gradient(
@@ -23,15 +29,5 @@
       #eaeaea
     );
   background-size: 30px 30px;
-  padding: 20px;
   background-position: 0 0, 15px 15px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-}
-.preview * {
-  flex: 0;
-  max-width: calc(100%);
-  max-height: calc(100%);
 }
