@@ -19,6 +19,7 @@
       "src": "^/chart/.*\\.png$",
       "dest": "/packages/api/chart.ts"
     },
+    {"src": "^/edit/.*", "dest": "/packages/app/index.html"},
     {"src": "^/(.*)", "dest": "/packages/app/$1"}
   ]
 }
