@@ -1,33 +1,16 @@
 import React, {useState} from 'react'
 import SplitPane from 'react-split-pane'
 import useDeviceInfo from './util/useDeviceInfo'
+import useUrlState from './util/useUrlState'
 import {Header} from './header'
 import {Editor} from './editor'
 import {Preview} from './preview'
 import MobileWarning from './MobileWarning'
+import defaultCode from './defaultCode'
 import styles from './App.module.css'
 
-const defaultCode = `graph TB
-  start(Start)
-
-  start ==> login[Login]
-
-  login ==> auth{Authorized?}
-
-  auth -- No  --> tooManyTries{Attempted 3 times?}
-  auth == Yes ==> granted[Access granted]
-
-  granted ==> exit{Exit module?}
-
-  exit -- No  --> granted
-  exit == Yes ==> finish(End)
-
-  tooManyTries -- No  --> login
-  tooManyTries -- Yes --> finish
-`
-
 const App = () => {
-  const [code, setCode] = useState(defaultCode)
+  const [code, setCode] = useUrlState(defaultCode, '/edit')
 
   const {isPortrait} = useDeviceInfo()
 
