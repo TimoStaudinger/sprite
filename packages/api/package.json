@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "chrome-aws-lambda": "^1.17.1",
-    "mermaid": "^8.0.0",
-    "puppeteer-core": "^1.17.0"
+    "chrome-aws-lambda": "^2.1.1",
+    "mermaid": "^8.5.0",
+    "puppeteer-core": "^3.0.0"
   },
   "browserslist": [
     ">0.2%",
@@ -14,8 +14,8 @@
     "not op_mini all"
   ],
   "devDependencies": {
-    "@types/mermaid": "^8.0.2",
-    "@types/puppeteer-core": "^1.9.0",
-    "typescript": "^3.5.1"
+    "@types/mermaid": "^8.2.1",
+    "@types/node": "^13.13.1",
+    "typescript": "^3.8.3"
   }
 }
