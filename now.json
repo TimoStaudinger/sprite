@@ -1,7 +1,4 @@
 {
-  "name": "sprite",
-  "version": 2,
-  "alias": ["sprite.link"],
   "builds": [
     {
       "src": "packages/app/package.json",

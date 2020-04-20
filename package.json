@@ -7,9 +7,10 @@
   "scripts": {
     "bootstrap": "lerna bootstrap",
     "start": "cd packages/app && yarn start",
-    "deploy": "now && now alias"
+    "deploy": "now"
   },
   "devDependencies": {
-    "lerna": "^3.15.0"
+    "lerna": "^3.15.0",
+    "now": "^18.0.0"
   }
 }
