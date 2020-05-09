@@ -3,14 +3,14 @@ import MonacoEditor from 'react-monaco-editor'
 import registerMermaidLanguage from '../util/MermaidMonaco'
 import styles from './Editor.module.css'
 
-const options = {
+const options: MonacoEditor['props']['options'] = {
   automaticLayout: true,
-  autoIndent: true,
+  autoIndent: 'full',
   scrollBeyondLastLine: false,
   smoothScrolling: true,
   minimap: {enabled: false},
   fontFamily: 'Fira Code',
-  fontLigatures: true
+  fontLigatures: true,
 }
 
 interface Props {

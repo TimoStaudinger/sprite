@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "chrome-aws-lambda": "^2.1.1",
+    "chrome-aws-lambda": "^3.0.4",
     "mermaid": "^8.5.0",
     "puppeteer-core": "^3.0.0"
   },

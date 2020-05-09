@@ -17,7 +17,7 @@
     "navaid": "^1.0.4",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
-    "react-monaco-editor": "^0.26.2",
+    "react-monaco-editor": "^0.36.0",
     "react-scripts": "^3.0.1",
     "react-split-pane": "^0.1.87",
     "typescript": "^3.5.1"
@@ -25,8 +25,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
-    "now-build": "npm run build"
+    "test": "react-scripts test"
   },
   "proxy": "https://sprite.tms.sh",
   "eslintConfig": {
