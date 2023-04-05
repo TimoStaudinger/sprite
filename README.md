@@ -39,7 +39,7 @@
 <br />
 
 <div align="center">
-  <a href="https://deploy.now.sh/?repo=https://github.com/TimoSta/sprite">
-    <img src="https://deploy.now.sh/static/button.svg" alt="Deploy to now" />
-  </a></div>
+  <a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FTimoStaudinger%2Fsprite">
+    <img src="https://vercel.com/button" alt="Deploy with Vercel"/>
+  </a>
 </div>
