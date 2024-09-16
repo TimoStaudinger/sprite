@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "chrome-aws-lambda": "^3.0.4",
-    "mermaid": "^9.3.0",
+    "mermaid": "^11.2.1",
     "puppeteer-core": "^3.0.0"
   },
   "browserslist": [
