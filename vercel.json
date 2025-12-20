@@ -1,22 +1,39 @@
 {
+  "version": 2,
   "builds": [
     {
       "src": "packages/app/package.json",
-      "use": "@now/static-build",
-      "config": {"distDir": "dist", "newPipeline": true}
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
     },
     {
       "src": "packages/api/chart.ts",
-      "use": "@now/node",
-      "config": {"maxLambdaSize": "40mb"}
+      "use": "@vercel/node"
     }
   ],
-  "routes": [
+  "functions": {
+    "packages/api/chart.ts": {
+      "maxLambdaSize": "40mb",
+      "includeFiles": [
+        "node_modules/puppeteer-core/**/*",
+        "node_modules/chrome-aws-lambda/**/*"
+      ]
+    }
+  },
+  "rewrites": [
     {
-      "src": "^/chart/.*\\.png$",
-      "dest": "/packages/api/chart.ts"
+      "source": "/chart/:path*",
+      "destination": "/packages/api/chart.ts"
     },
-    {"src": "^/edit/.*", "dest": "/packages/app/index.html"},
-    {"src": "^/(.*)", "dest": "/packages/app/$1"}
+    {
+      "source": "/edit/:path*",
+      "destination": "/packages/app/index.html"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/packages/app/:path*"
+    }
   ]
 }
