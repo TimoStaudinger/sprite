@@ -6,7 +6,7 @@ const padding = 0
 const getScreenshot = async (pageContent: string, targetId: string) => {
   const browser = await puppeteer.launch({
     args: chromium.args,
-    executablePath: await chromium.executablePath,
+    executablePath: await chromium.executablePath(),
     headless: true,
   })
 
