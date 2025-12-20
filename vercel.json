@@ -15,10 +15,7 @@
   ],
   "functions": {
     "packages/api/chart.ts": {
-      "includeFiles": [
-        "node_modules/puppeteer-core/**/*",
-        "node_modules/chrome-aws-lambda/**/*"
-      ]
+      "includeFiles": "{node_modules/puppeteer-core,node_modules/chrome-aws-lambda}/**/*"
     }
   },
   "rewrites": [
