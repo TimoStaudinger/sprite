@@ -1,13 +1,14 @@
-const chrome = require('chrome-aws-lambda')
+import chromium from "@sparticuz/chromium";
 const puppeteer = require('puppeteer-core')
 
 const padding = 0
 
 const getScreenshot = async (pageContent: string, targetId: string) => {
   const browser = await puppeteer.launch({
-    args: chrome.args,
-    executablePath: await chrome.executablePath,
-    headless: chrome.headless,
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath: await chromium.executablePath,
+    headless: chromium.headless,
   })
 
   const page = await browser.newPage()
