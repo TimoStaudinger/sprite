@@ -3,7 +3,7 @@
     {
       "src": "packages/app/package.json",
       "use": "@now/static-build",
-      "config": {"distDir": "build", "newPipeline": true}
+      "config": {"distDir": "dist", "newPipeline": true}
     },
     {
       "src": "packages/api/chart.ts",
