@@ -15,7 +15,6 @@
   ],
   "functions": {
     "packages/api/chart.ts": {
-      "maxLambdaSize": "40mb",
       "includeFiles": [
         "node_modules/puppeteer-core/**/*",
         "node_modules/chrome-aws-lambda/**/*"
