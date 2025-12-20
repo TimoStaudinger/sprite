@@ -1,35 +1,11 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "packages/app/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    },
-    {
-      "src": "packages/api/chart.ts",
-      "use": "@vercel/node"
-    }
-  ],
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "packages/api/chart.ts": {
+    "api/chart.ts": {
       "includeFiles": "{node_modules/puppeteer-core,node_modules/chrome-aws-lambda}/**/*"
     }
   },
   "rewrites": [
-    {
-      "source": "/chart/:path*",
-      "destination": "/packages/api/chart.ts"
-    },
-    {
-      "source": "/edit/:path*",
-      "destination": "/packages/app/index.html"
-    },
-    {
-      "source": "/:path*",
-      "destination": "/packages/app/:path*"
-    }
+    { "source": "/chart/:path*", "destination": "/api/chart" }
   ]
 }
