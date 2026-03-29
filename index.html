@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <script>
+      // Dynatrace RUM — set VITE_DT_RUM_SCRIPT_URL in your environment
+      ;(function() {
+        var src = '%VITE_DT_RUM_SCRIPT_URL%'
+        if (src && !src.startsWith('%')) {
+          var s = document.createElement('script')
+          s.src = src
+          s.crossOrigin = 'anonymous'
+          document.head.appendChild(s)
+        }
+      })()
+    </script>
+
     <script
       async
       src="https://www.googletagmanager.com/gtag/js?id=UA-61290176-2"
