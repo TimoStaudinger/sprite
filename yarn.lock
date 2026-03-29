@@ -366,7 +366,7 @@
     "@opentelemetry/resources" "2.6.1"
     "@opentelemetry/sdk-trace-base" "2.6.1"
 
-"@opentelemetry/exporter-trace-otlp-proto@0.214.0":
+"@opentelemetry/exporter-trace-otlp-proto@0.214.0", "@opentelemetry/exporter-trace-otlp-proto@^0.214.0":
   version "0.214.0"
   resolved "https://registry.yarnpkg.com/@opentelemetry/exporter-trace-otlp-proto/-/exporter-trace-otlp-proto-0.214.0.tgz#d2cd1257bdbc19c998ca37b386a08bbe83aa4a4a"
   integrity sha512-ON0spYWb2yAdQ9b+ItNyK0c6qdtcs+0eVR4YFJkhJL7agfT8sHFg0e5EesauSRiTHPZHiDobI92k77q0lwAmqg==
