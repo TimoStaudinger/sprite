@@ -22,10 +22,10 @@ const App = () => {
         <SplitPane
           direction={isPortrait ? 'vertical' : 'horizontal'}
         >
-          <Pane defaultSize="50%">
+          <Pane defaultSize="50%" style={{overflow: 'hidden'}}>
             <Editor code={code} onChange={setCode} />
           </Pane>
-          <Pane>
+          <Pane style={{overflow: 'hidden'}}>
             <Preview code={code} />
           </Pane>
         </SplitPane>
