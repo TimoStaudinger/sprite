@@ -1,5 +1,5 @@
 import React, {useState} from 'react'
-import SplitPane from 'react-split-pane'
+import {SplitPane, Pane} from 'react-split-pane'
 import useDeviceInfo from './util/useDeviceInfo'
 import useUrlState from './util/useUrlState'
 import {Header} from './header'
@@ -20,11 +20,14 @@ const App = () => {
 
       <div className={styles.body}>
         <SplitPane
-          split={isPortrait ? 'horizontal' : 'vertical'}
-          defaultSize="50%"
+          direction={isPortrait ? 'vertical' : 'horizontal'}
         >
-          <Editor code={code} onChange={setCode} />
-          <Preview code={code} />
+          <Pane defaultSize="50%" style={{overflow: 'hidden'}}>
+            <Editor code={code} onChange={setCode} />
+          </Pane>
+          <Pane style={{overflow: 'hidden'}}>
+            <Preview code={code} />
+          </Pane>
         </SplitPane>
       </div>
 
