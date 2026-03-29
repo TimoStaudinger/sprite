@@ -1,7 +1,7 @@
 import {IncomingMessage, ServerResponse} from 'http'
 import {parse} from 'url'
 import getScreenshot from './util/screenshot'
-import {withSpan, flushTraces} from './util/tracing'
+import {withSpan} from './util/tracing'
 
 const buildPage = (svg: string): string => {
   return `
@@ -62,6 +62,4 @@ export default async (req: IncomingMessage, res: ServerResponse) => {
     res.setHeader('Cache-Control', 'max-age=60, s-maxage=86400')
     res.end(file)
   })
-
-  await flushTraces()
 }
