@@ -1,6 +1,7 @@
 import {IncomingMessage, ServerResponse} from 'http'
 import {parse} from 'url'
 import getScreenshot from './util/screenshot'
+import {withSpan} from './util/tracing'
 
 const buildPage = (svg: string): string => {
   return `
@@ -44,15 +45,21 @@ const getCodeFromPath = (path: string) =>
   Buffer.from(decodeURIComponent(path.slice(7, -4)), 'base64').toString()
 
 export default async (req: IncomingMessage, res: ServerResponse) => {
-  const {pathname} = parse(req.url, true)
-  // const { type = 'png', quality, fullPage } = query;
-  const code = getCodeFromPath(pathname)
+  await withSpan('chart.generate', async (span) => {
+    const {pathname} = parse(req.url, true)
+    span.setAttribute('http.route', '/api/chart')
 
-  const page = buildPage(code)
+    const code = getCodeFromPath(pathname)
+    span.setAttribute('chart.code_length', code.length)
 
-  const file = await getScreenshot(page, 'target')
-  res.statusCode = 200
-  res.setHeader('Content-Type', `image/png`)
-  res.setHeader('Cache-Control', 'max-age=60, s-maxage=86400')
-  res.end(file)
+    const page = buildPage(code)
+
+    const file = await getScreenshot(page, 'target')
+    span.setAttribute('chart.image_bytes', file.length)
+
+    res.statusCode = 200
+    res.setHeader('Content-Type', `image/png`)
+    res.setHeader('Cache-Control', 'max-age=60, s-maxage=86400')
+    res.end(file)
+  })
 }
