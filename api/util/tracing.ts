@@ -14,11 +14,20 @@ let initialized = false
 let spanProcessor: SimpleSpanProcessor | null = null
 
 function initTracing() {
+  console.log('[tracing] initTracing called', {
+    hasEndpoint: !!endpoint,
+    hasApiToken: !!apiToken,
+    initialized,
+  })
+
   if (initialized || !endpoint || !apiToken) return
   initialized = true
 
+  const exportUrl = `${endpoint}/v1/traces`
+  console.log('[tracing] Configuring OTLP exporter', {url: exportUrl})
+
   const exporter = new OTLPTraceExporter({
-    url: `${endpoint}/v1/traces`,
+    url: exportUrl,
     headers: {
       Authorization: `Api-Token ${apiToken}`,
     },
@@ -35,6 +44,7 @@ function initTracing() {
   })
 
   sdk.start()
+  console.log('[tracing] SDK started successfully')
 }
 
 initTracing()
