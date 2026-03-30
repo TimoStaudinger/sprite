@@ -7,15 +7,23 @@ interface Props {
 }
 const Render = ({code}: Props) => {
   const [loading, setLoading] = useState(true)
+  const [debouncedCode, setDebouncedCode] = useState(code)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedCode(code)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [code])
 
   useEffect(
     () => {
       setLoading(true)
     },
-    [code]
+    [debouncedCode]
   )
 
-  const encoded = encode(code)
+  const encoded = encode(debouncedCode)
 
   return (
     <img
