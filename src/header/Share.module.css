@@ -17,3 +17,19 @@
 .label {
   margin-right: 10px;
 }
+
+.copyButton {
+  margin-left: 10px;
+  height: calc(100% - 20px);
+  font-size: 16px;
+  background: #4c566a;
+  color: hsl(0, 0%, 95%);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.copyButton:hover {
+  background: #5e81ac;
+}
