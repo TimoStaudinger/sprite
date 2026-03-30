@@ -1,0 +1,333 @@
+import { chromium, type Page } from "playwright";
+
+const BASE_URL = "https://sprite.link";
+const HEADED = !!process.env.HEADED;
+
+// --- Helpers ---
+
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function randomDelay(minMs = 1000, maxMs = 5000) {
+  return sleep(minMs + Math.random() * (maxMs - minMs));
+}
+
+function encode(code: string): string {
+  const bytes = new TextEncoder().encode(code);
+  const binary = Array.from(bytes, (b) => String.fromCharCode(b)).join("");
+  return encodeURIComponent(btoa(binary));
+}
+
+function uniqueId() {
+  return `t${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+}
+
+// --- Diagrams ---
+
+const defaultFlowchart = `graph TB
+  start(Start)
+
+  start ==> login[Login]
+
+  login ==> auth{Authorized?}
+
+  auth -- No  --> tooManyTries{Attempted 3 times?}
+  auth == Yes ==> granted[Access granted]
+
+  granted ==> exit{Exit module?}
+
+  exit -- No  --> granted
+  exit == Yes ==> finish(End)
+
+  tooManyTries -- No  --> login
+  tooManyTries -- Yes --> finish`;
+
+function uniqueSequenceDiagram() {
+  const id = uniqueId();
+  return `sequenceDiagram
+    participant User_${id}
+    participant Server
+    participant Database
+
+    User_${id}->>Server: POST /login
+    Server->>Database: SELECT user
+    Database-->>Server: user record
+    Server-->>User_${id}: 200 OK + token`;
+}
+
+function uniqueClassDiagram() {
+  const id = uniqueId();
+  return `classDiagram
+    class Animal_${id} {
+      +String name
+      +int age
+      +makeSound()
+    }
+    class Dog_${id} {
+      +fetch()
+    }
+    class Cat_${id} {
+      +purr()
+    }
+    Animal_${id} <|-- Dog_${id}
+    Animal_${id} <|-- Cat_${id}`;
+}
+
+const invalidSyntax = `graph TB
+  A[Start
+  B --> C
+  this is not valid mermaid {{{}}}`;
+
+function fixedSyntax() {
+  const id = uniqueId();
+  return `graph TB
+  A_${id}[Start] --> B_${id}[Process]
+  B_${id} --> C_${id}[End]`;
+}
+
+// --- Monaco helpers ---
+
+async function getChartSrc(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const img = document.querySelector(
+      'img[alt="Chart preview"]'
+    ) as HTMLImageElement | null;
+    return img?.src ?? "";
+  });
+}
+
+async function clearEditor(page: Page) {
+  await page.click(".monaco-editor .view-lines");
+  await sleep(200);
+  const isMac = process.platform === "darwin";
+  await page.keyboard.press(isMac ? "Meta+a" : "Control+a");
+  await page.keyboard.press("Backspace");
+  await sleep(300);
+}
+
+async function typeInEditor(page: Page, code: string) {
+  await clearEditor(page);
+
+  // Type line by line, using Enter for newlines
+  const lines = code.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    if (i > 0) {
+      await page.keyboard.press("Enter");
+    }
+    await page.keyboard.type(lines[i], { delay: 15 });
+    await sleep(30 + Math.random() * 50);
+  }
+}
+
+async function setEditorValue(page: Page, code: string) {
+  // Use clipboard paste for instant value setting (e.g. switching back to a prior diagram)
+  await clearEditor(page);
+  await page.evaluate((text: string) => {
+    navigator.clipboard.writeText(text);
+  }, code);
+  const isMac = process.platform === "darwin";
+  await page.keyboard.press(isMac ? "Meta+v" : "Control+v");
+  await sleep(300);
+}
+
+async function waitForChartLoad(page: Page, timeoutMs = 30000) {
+  await page.waitForFunction(
+    () => {
+      const img = document.querySelector(
+        'img[alt="Chart preview"]'
+      ) as HTMLImageElement | null;
+      return img && img.complete && img.naturalWidth > 0;
+    },
+    { timeout: timeoutMs }
+  );
+}
+
+async function waitForChartUpdate(
+  page: Page,
+  previousSrc: string,
+  timeoutMs = 30000
+) {
+  // Wait for the chart image src to change AND the new image to load
+  try {
+    await page.waitForFunction(
+      (prevSrc: string) => {
+        const img = document.querySelector(
+          'img[alt="Chart preview"]'
+        ) as HTMLImageElement | null;
+        if (!img) return false;
+        return img.src !== prevSrc && img.complete && img.naturalWidth > 0;
+      },
+      previousSrc,
+      { timeout: timeoutMs }
+    );
+  } catch {
+    // Chart may fail to load for invalid syntax — that's expected
+  }
+}
+
+// --- Scenarios ---
+
+async function scenarioNormalEditorFlow(page: Page) {
+  console.log("\n=== Scenario: Normal Editor Flow ===");
+
+  // 1. Navigate to home — loads default diagram
+  console.log("  Opening sprite.link...");
+  await page.goto(BASE_URL, { waitUntil: "networkidle" });
+  await waitForChartLoad(page);
+  console.log("  Default chart loaded.");
+  await randomDelay(2000, 4000);
+
+  // 2. Re-fetch the same default diagram (cached hit)
+  console.log("  Reloading page for cache hit...");
+  await page.reload({ waitUntil: "networkidle" });
+  await waitForChartLoad(page);
+  console.log("  Cache hit — default chart reloaded.");
+  await randomDelay(1000, 2000);
+
+  // 3. Write a unique sequence diagram (cache miss)
+  console.log("  Typing unique sequence diagram...");
+  const seqDiagram = uniqueSequenceDiagram();
+  let prevSrc = await getChartSrc(page);
+  await typeInEditor(page, seqDiagram);
+  await randomDelay(1000, 2000);
+  await waitForChartUpdate(page, prevSrc);
+  console.log("  Sequence diagram rendered (cache miss).");
+  await randomDelay(2000, 5000);
+
+  // 4. Write a unique class diagram (cache miss)
+  console.log("  Typing unique class diagram...");
+  prevSrc = await getChartSrc(page);
+  await typeInEditor(page, uniqueClassDiagram());
+  await randomDelay(1000, 2000);
+  await waitForChartUpdate(page, prevSrc);
+  console.log("  Class diagram rendered (cache miss).");
+  await randomDelay(2000, 4000);
+
+  // 5. Go back to the sequence diagram (cache hit — same encoded URL)
+  console.log("  Switching back to sequence diagram (cache hit)...");
+  prevSrc = await getChartSrc(page);
+  await setEditorValue(page, seqDiagram);
+  await waitForChartUpdate(page, prevSrc);
+  console.log("  Sequence diagram re-rendered from cache.");
+  await randomDelay(1000, 3000);
+}
+
+async function scenarioSyntaxError(page: Page) {
+  console.log("\n=== Scenario: Syntax Error & Recovery ===");
+
+  // 1. Type invalid syntax
+  console.log("  Typing invalid mermaid syntax...");
+  let prevSrc = await getChartSrc(page);
+  await typeInEditor(page, invalidSyntax);
+  await randomDelay(1000, 2000);
+  await waitForChartUpdate(page, prevSrc);
+  console.log("  Invalid syntax submitted — error expected.");
+  await randomDelay(3000, 5000);
+
+  // 2. Fix the syntax
+  console.log("  Fixing syntax...");
+  prevSrc = await getChartSrc(page);
+  await typeInEditor(page, fixedSyntax());
+  await randomDelay(1000, 2000);
+  await waitForChartUpdate(page, prevSrc);
+  console.log("  Syntax fixed — chart recovered.");
+  await randomDelay(2000, 4000);
+}
+
+async function scenarioShareFlow(page: Page) {
+  console.log("\n=== Scenario: Share / Copy Embed URL ===");
+
+  // Make sure we have a valid diagram loaded
+  console.log("  Loading a diagram first...");
+  const prevSrc = await getChartSrc(page);
+  await setEditorValue(page, defaultFlowchart);
+  await waitForChartUpdate(page, prevSrc);
+  await randomDelay(1000, 2000);
+
+  // Click the copy button
+  const copyButton = page.locator("button", { hasText: "Copy" });
+  if (await copyButton.isVisible()) {
+    console.log("  Clicking Copy button...");
+    await copyButton.click();
+    await randomDelay(1000, 2000);
+    console.log("  Embed URL copied.");
+  } else {
+    console.log("  Copy button not visible (mobile view?) — skipping.");
+  }
+
+  // Click the embed URL input to select it
+  const embedInput = page.locator("#shareLink");
+  if (await embedInput.isVisible()) {
+    console.log("  Focusing embed URL input...");
+    await embedInput.focus();
+    await randomDelay(500, 1000);
+  }
+}
+
+async function scenarioEmbedSimulation() {
+  console.log("\n=== Scenario: Embed Simulation (direct PNG fetch) ===");
+
+  const diagrams = [
+    { name: "default flowchart (likely cached)", code: defaultFlowchart },
+    { name: "default flowchart again (cache hit)", code: defaultFlowchart },
+    { name: "unique diagram (cache miss)", code: fixedSyntax() },
+    { name: "another unique diagram (cache miss)", code: uniqueSequenceDiagram() },
+  ];
+
+  for (const { name, code } of diagrams) {
+    const url = `${BASE_URL}/chart/${encode(code)}.png`;
+    console.log(`  Fetching embed: ${name}...`);
+    const start = Date.now();
+    try {
+      const res = await fetch(url);
+      const elapsed = Date.now() - start;
+      console.log(
+        `    ${res.status} ${res.statusText} — ${elapsed}ms — ${res.headers.get("content-type")}`
+      );
+    } catch (err) {
+      console.log(`    Error: ${err}`);
+    }
+    await randomDelay(2000, 5000);
+  }
+}
+
+// --- Main ---
+
+async function main() {
+  console.log("Starting synthetic simulation against", BASE_URL);
+  console.log("Headed mode:", HEADED ? "ON" : "OFF");
+
+  const browser = await chromium.launch({ headless: !HEADED });
+  const context = await browser.newContext({
+    viewport: { width: 1440, height: 900 },
+    userAgent:
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 SpriteBot/synthetic",
+    permissions: ["clipboard-read", "clipboard-write"],
+  });
+
+  const page = await context.newPage();
+
+  try {
+    await scenarioNormalEditorFlow(page);
+    await scenarioSyntaxError(page);
+    await scenarioShareFlow(page);
+  } finally {
+    // Give Dynatrace RUM time to flush beacons before closing
+    console.log("\n  Waiting for RUM beacon flush...");
+    await sleep(5000);
+    await page.close();
+    await context.close();
+    await browser.close();
+  }
+
+  // Embed simulation uses fetch, no browser needed
+  await scenarioEmbedSimulation();
+
+  console.log("\nDone. Check Dynatrace for new sessions and traces.");
+}
+
+main().catch((err) => {
+  console.error("Simulation failed:", err);
+  process.exit(1);
+});

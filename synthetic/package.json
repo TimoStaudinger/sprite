@@ -1,0 +1,12 @@
+{
+  "name": "sprite-synthetic",
+  "private": true,
+  "scripts": {
+    "simulate": "tsx simulate.ts",
+    "simulate:headed": "HEADED=1 tsx simulate.ts"
+  },
+  "dependencies": {
+    "playwright": "^1.52.0",
+    "tsx": "^4.19.0"
+  }
+}
