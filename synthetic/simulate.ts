@@ -88,36 +88,47 @@ function fixedSyntax() {
 
 // --- Monaco helpers ---
 
-async function setEditorValue(page: Page, code: string) {
-  await page.evaluate((c: string) => {
-    const models = (window as any).monaco?.editor?.getModels?.();
-    if (models?.[0]) {
-      models[0].setValue(c);
-    }
-  }, code);
+async function getChartSrc(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const img = document.querySelector(
+      'img[alt="Chart preview"]'
+    ) as HTMLImageElement | null;
+    return img?.src ?? "";
+  });
+}
+
+async function clearEditor(page: Page) {
+  await page.click(".monaco-editor .view-lines");
+  await sleep(200);
+  const isMac = process.platform === "darwin";
+  await page.keyboard.press(isMac ? "Meta+a" : "Control+a");
+  await page.keyboard.press("Backspace");
+  await sleep(300);
 }
 
 async function typeInEditor(page: Page, code: string) {
-  // Clear and type character by character to simulate real editing
-  await setEditorValue(page, "");
-  await sleep(300);
+  await clearEditor(page);
 
-  // Type in chunks to balance realism with speed
-  const chunkSize = 15;
-  for (let i = 0; i < code.length; i += chunkSize) {
-    const chunk = code.slice(i, i + chunkSize);
-    await page.evaluate(
-      ({ chunk: c, pos }: { chunk: string; pos: number }) => {
-        const models = (window as any).monaco?.editor?.getModels?.();
-        if (models?.[0]) {
-          const current = models[0].getValue();
-          models[0].setValue(current + c);
-        }
-      },
-      { chunk, pos: i }
-    );
-    await sleep(50 + Math.random() * 100);
+  // Type line by line, using Enter for newlines
+  const lines = code.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    if (i > 0) {
+      await page.keyboard.press("Enter");
+    }
+    await page.keyboard.type(lines[i], { delay: 15 });
+    await sleep(30 + Math.random() * 50);
   }
+}
+
+async function setEditorValue(page: Page, code: string) {
+  // Use clipboard paste for instant value setting (e.g. switching back to a prior diagram)
+  await clearEditor(page);
+  await page.evaluate((text: string) => {
+    navigator.clipboard.writeText(text);
+  }, code);
+  const isMac = process.platform === "darwin";
+  await page.keyboard.press(isMac ? "Meta+v" : "Control+v");
+  await sleep(300);
 }
 
 async function waitForChartLoad(page: Page, timeoutMs = 30000) {
@@ -132,16 +143,22 @@ async function waitForChartLoad(page: Page, timeoutMs = 30000) {
   );
 }
 
-async function waitForChartUpdate(page: Page, timeoutMs = 30000) {
-  // Wait for the loading state to appear and then resolve
+async function waitForChartUpdate(
+  page: Page,
+  previousSrc: string,
+  timeoutMs = 30000
+) {
+  // Wait for the chart image src to change AND the new image to load
   try {
     await page.waitForFunction(
-      () => {
+      (prevSrc: string) => {
         const img = document.querySelector(
           'img[alt="Chart preview"]'
         ) as HTMLImageElement | null;
-        return img && img.complete && img.naturalWidth > 0;
+        if (!img) return false;
+        return img.src !== prevSrc && img.complete && img.naturalWidth > 0;
       },
+      previousSrc,
       { timeout: timeoutMs }
     );
   } catch {
@@ -171,24 +188,27 @@ async function scenarioNormalEditorFlow(page: Page) {
   // 3. Write a unique sequence diagram (cache miss)
   console.log("  Typing unique sequence diagram...");
   const seqDiagram = uniqueSequenceDiagram();
+  let prevSrc = await getChartSrc(page);
   await typeInEditor(page, seqDiagram);
   await randomDelay(1000, 2000);
-  await waitForChartUpdate(page);
+  await waitForChartUpdate(page, prevSrc);
   console.log("  Sequence diagram rendered (cache miss).");
   await randomDelay(2000, 5000);
 
   // 4. Write a unique class diagram (cache miss)
   console.log("  Typing unique class diagram...");
+  prevSrc = await getChartSrc(page);
   await typeInEditor(page, uniqueClassDiagram());
   await randomDelay(1000, 2000);
-  await waitForChartUpdate(page);
+  await waitForChartUpdate(page, prevSrc);
   console.log("  Class diagram rendered (cache miss).");
   await randomDelay(2000, 4000);
 
   // 5. Go back to the sequence diagram (cache hit — same encoded URL)
   console.log("  Switching back to sequence diagram (cache hit)...");
+  prevSrc = await getChartSrc(page);
   await setEditorValue(page, seqDiagram);
-  await waitForChartUpdate(page);
+  await waitForChartUpdate(page, prevSrc);
   console.log("  Sequence diagram re-rendered from cache.");
   await randomDelay(1000, 3000);
 }
@@ -198,17 +218,19 @@ async function scenarioSyntaxError(page: Page) {
 
   // 1. Type invalid syntax
   console.log("  Typing invalid mermaid syntax...");
+  let prevSrc = await getChartSrc(page);
   await typeInEditor(page, invalidSyntax);
   await randomDelay(1000, 2000);
-  await waitForChartUpdate(page);
+  await waitForChartUpdate(page, prevSrc);
   console.log("  Invalid syntax submitted — error expected.");
   await randomDelay(3000, 5000);
 
   // 2. Fix the syntax
   console.log("  Fixing syntax...");
+  prevSrc = await getChartSrc(page);
   await typeInEditor(page, fixedSyntax());
   await randomDelay(1000, 2000);
-  await waitForChartUpdate(page);
+  await waitForChartUpdate(page, prevSrc);
   console.log("  Syntax fixed — chart recovered.");
   await randomDelay(2000, 4000);
 }
@@ -218,8 +240,9 @@ async function scenarioShareFlow(page: Page) {
 
   // Make sure we have a valid diagram loaded
   console.log("  Loading a diagram first...");
+  const prevSrc = await getChartSrc(page);
   await setEditorValue(page, defaultFlowchart);
-  await waitForChartUpdate(page);
+  await waitForChartUpdate(page, prevSrc);
   await randomDelay(1000, 2000);
 
   // Click the copy button
@@ -280,6 +303,7 @@ async function main() {
     viewport: { width: 1440, height: 900 },
     userAgent:
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 SpriteBot/synthetic",
+    permissions: ["clipboard-read", "clipboard-write"],
   });
 
   const page = await context.newPage();
