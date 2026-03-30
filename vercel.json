@@ -7,7 +7,6 @@
   },
   "rewrites": [
     { "source": "/chart/:path*", "destination": "/api/chart" },
-    { "source": "/dt/:path*", "destination": "https://js-cdn.dynatrace.com/jstag/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
