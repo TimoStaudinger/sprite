@@ -1,6 +1,8 @@
 .share {
   padding: 10px;
   margin-left: 40px;
+  display: flex;
+  align-items: center;
 }
 
 .share input {
@@ -16,4 +18,22 @@
 
 .label {
   margin-right: 10px;
+}
+
+.copyButton {
+  margin-left: 10px;
+  height: calc(100% - 20px);
+  width: 90px;
+  font-size: 16px;
+  background: #4c566a;
+  color: hsl(0, 0%, 95%);
+  border: none;
+  padding: 8px 0;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.copyButton:hover {
+  background: #5e81ac;
 }
