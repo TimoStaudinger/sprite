@@ -1,6 +1,8 @@
 .share {
   padding: 10px;
   margin-left: 40px;
+  display: flex;
+  align-items: center;
 }
 
 .share input {
