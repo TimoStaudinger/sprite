@@ -74,6 +74,17 @@ function uniqueClassDiagram() {
     Animal_${id} <|-- Cat_${id}`;
 }
 
+function uniqueStateDiagram() {
+  const id = uniqueId();
+  return `stateDiagram-v2
+    [*] --> Idle_${id}
+    Idle_${id} --> Processing_${id}: submit
+    Processing_${id} --> Done_${id}: complete
+    Processing_${id} --> Error_${id}: fail
+    Error_${id} --> Idle_${id}: retry
+    Done_${id} --> [*]`;
+}
+
 const invalidSyntax = `graph TB
   A[Start
   B --> C
@@ -211,6 +222,28 @@ async function scenarioNormalEditorFlow(page: Page) {
   await waitForChartUpdate(page, prevSrc);
   console.log("  Sequence diagram re-rendered from cache.");
   await randomDelay(1000, 3000);
+
+  // 6. Switch back to the default flowchart (cache hit — rendered earlier)
+  console.log("  Switching to default flowchart (cache hit)...");
+  prevSrc = await getChartSrc(page);
+  await setEditorValue(page, defaultFlowchart);
+  await waitForChartUpdate(page, prevSrc);
+  console.log("  Default flowchart re-rendered from cache.");
+  await randomDelay(1000, 2000);
+
+  // 7. Rapidly toggle between two cached diagrams
+  console.log("  Rapid toggle: sequence → default → sequence (cache hits)...");
+  for (const [label, code] of [
+    ["sequence", seqDiagram],
+    ["default", defaultFlowchart],
+    ["sequence", seqDiagram],
+  ] as const) {
+    prevSrc = await getChartSrc(page);
+    await setEditorValue(page, code);
+    await waitForChartUpdate(page, prevSrc);
+    console.log(`    ${label} diagram loaded (cache hit).`);
+    await randomDelay(500, 1500);
+  }
 }
 
 async function scenarioSyntaxError(page: Page) {
@@ -268,11 +301,23 @@ async function scenarioShareFlow(page: Page) {
 async function scenarioEmbedSimulation() {
   console.log("\n=== Scenario: Embed Simulation (direct PNG fetch) ===");
 
-  const diagrams = [
+  const uniqueSeq = uniqueSequenceDiagram();
+  const uniqueState = uniqueStateDiagram();
+
+  const diagrams: { name: string; code: string }[] = [
+    // initial fetches — populate CDN cache
     { name: "default flowchart (likely cached)", code: defaultFlowchart },
+    { name: "unique sequence (cache miss)", code: uniqueSeq },
+    { name: "unique state (cache miss)", code: uniqueState },
+
+    // immediate re-fetches — cache hits
     { name: "default flowchart again (cache hit)", code: defaultFlowchart },
-    { name: "unique diagram (cache miss)", code: fixedSyntax() },
-    { name: "another unique diagram (cache miss)", code: uniqueSequenceDiagram() },
+    { name: "unique sequence again (cache hit)", code: uniqueSeq },
+    { name: "unique state again (cache hit)", code: uniqueState },
+
+    // one more miss then hit
+    { name: "another unique diagram (cache miss)", code: fixedSyntax() },
+    { name: "default flowchart 3rd time (cache hit)", code: defaultFlowchart },
   ];
 
   for (const { name, code } of diagrams) {
