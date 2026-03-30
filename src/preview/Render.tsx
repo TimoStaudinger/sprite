@@ -1,5 +1,6 @@
 import React, {useState, useEffect} from 'react'
 import {encode} from '../util/code'
+import {onDebounceComplete, onChartRendered} from '../util/chartTiming'
 import styles from './Render.module.css'
 
 interface Props {
@@ -11,6 +12,7 @@ const Render = ({code}: Props) => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
+      onDebounceComplete()
       setDebouncedCode(code)
     }, 300)
     return () => clearTimeout(timer)
@@ -30,7 +32,10 @@ const Render = ({code}: Props) => {
       className={`${styles.render} ${loading ? styles.loading : ''}`}
       src={`/chart/${encoded}.png`}
       alt="Chart preview"
-      onLoad={() => setLoading(false)}
+      onLoad={() => {
+        setLoading(false)
+        onChartRendered()
+      }}
     />
   )
 }
