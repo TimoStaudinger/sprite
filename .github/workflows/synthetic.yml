@@ -2,7 +2,8 @@ name: Synthetic Monitoring
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
 
 jobs:
   simulate:
@@ -28,28 +29,27 @@ jobs:
       - name: Report result to Dynatrace
         if: always()
         env:
-          DT_ENVIRONMENT_URL: ${{ secrets.DT_ENVIRONMENT_URL }}
+          DT_ENDPOINT: ${{ secrets.DT_ENDPOINT }}
           DT_API_TOKEN: ${{ secrets.DT_API_TOKEN }}
         run: |
-          STATUS="${{ job.status }}"
-          if [ "$STATUS" = "success" ]; then
+          if [ "${{ job.status }}" = "success" ]; then
             EVENT_TYPE="CUSTOM_INFO"
-            TITLE="Synthetic test passed"
+            TITLE="Synthetic monitoring passed"
           else
             EVENT_TYPE="ERROR_EVENT"
-            TITLE="Synthetic test failed"
+            TITLE="Synthetic monitoring failed"
           fi
 
-          curl -s -X POST "${DT_ENVIRONMENT_URL}/api/v2/events/ingest" \
+          curl -sS -X POST "${DT_ENDPOINT}/api/v2/events/ingest" \
             -H "Authorization: Api-Token ${DT_API_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "{
               \"eventType\": \"${EVENT_TYPE}\",
               \"title\": \"${TITLE}\",
               \"properties\": {
-                \"source\": \"github-actions\",
-                \"workflow\": \"synthetic\",
-                \"status\": \"${STATUS}\",
-                \"run_id\": \"${{ github.run_id }}\"
+                \"workflow\": \"synthetic-monitoring\",
+                \"run_id\": \"${{ github.run_id }}\",
+                \"run_url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",
+                \"status\": \"${{ job.status }}\"
               }
             }"
