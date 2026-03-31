@@ -3,7 +3,7 @@ name: Synthetic Monitoring
 on:
   schedule:
     - cron: "*/15 * * * *"
-  workflow_dispatch: 
+  workflow_dispatch:
 
 jobs:
   simulate:

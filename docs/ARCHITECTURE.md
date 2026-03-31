@@ -23,36 +23,32 @@ Sprite is a web-based Mermaid diagram editor with live preview and image export.
 
 The editor must feel responsive — when a user types, the preview should update within seconds. This drives the debounced rendering approach (300ms delay before API call) and aggressive CDN caching so repeat renders are near-instant.
 
-### Zero-friction sharing
-
-Diagrams are encoded directly into the URL via base64. No accounts, no database, no sign-up. Anyone with the link sees the diagram. This also enables an embeddable image URL pattern (`/chart/{code}.png`) that works in READMEs, docs, and messengers.
-
 ### Reliable rendering
 
-Mermaid diagrams are rendered server-side using a headless browser (Puppeteer), not on the client. This guarantees consistent output regardless of the user's browser, OS, or installed fonts. It also means the image URL works in contexts that can't run JavaScript.
+Diagrams must render correctly and consistently — whether viewed in the editor, opened via a shared URL, or embedded as an image in a README. Server-side rendering via Puppeteer guarantees consistent output regardless of the user's browser, OS, or installed fonts. Encoding diagrams directly into the URL (base64, no database) means anyone with the link sees the diagram, and the embeddable `/chart/{code}.png` pattern works in contexts that can't run JavaScript.
 
 ### Cost efficiency
 
 The rendering infrastructure is a serverless function fronted by a CDN with 24-hour edge caching. Because diagram code is part of the URL, each unique diagram gets its own cache entry. Repeated renders of the same diagram never hit the function, they're served from the edge.
 
-### Production confidence
+### Continuous validation
 
-A Playwright-based synthetic test suite runs continuously via GitHub Actions. It simulates real user flows (editing, sharing, error recovery, embed fetches) against production, generating continuous availability and performance data.
+A Playwright-based synthetic test suite runs continuously via GitHub Actions. It simulates real user flows (editing, sharing, error recovery, embed fetches) against production, providing a continuous signal on availability that doesn't depend on real user traffic.
 
 ## KPIs
 
-Each design goal maps to measurable indicators:
+Each design goal maps to measurable indicators. The same concern (e.g. latency) is measured at multiple layers — RUM captures the user's experience, traces capture the server's perspective, and synthetic monitoring provides a continuous baseline.
 
-| Design Goal          | KPI                            | Target       |
-| -------------------- | ------------------------------ | ------------ |
-| Instant feedback     | Preview render latency (p95)   | < 3s         |
-| Instant feedback     | API response time (p50 / p95)  | < 1s / < 3s  |
-| Zero-friction sharing| Share action success rate       | ~100%        |
-| Reliable rendering   | Chart render error rate         | < 1%         |
-| Reliable rendering   | Availability (synthetic)        | > 99.5%      |
-| Cost efficiency      | CDN cache hit rate              | > 60%        |
-| Cost efficiency      | Cold start frequency            | Minimize     |
-| Production confidence| Synthetic test pass rate        | 100%         |
+| Design Goal             | KPI                                          | Source    | Target   |
+| ----------------------- | -------------------------------------------- | --------- | -------- |
+| Instant feedback        | User action duration — edit to preview (p95) | RUM       | < 4s     |
+| Instant feedback        | Visually complete time (p95)                 | RUM       | < 2s     |
+| Instant feedback        | API response time (p95)                      | Traces    | < 3s     |
+| Reliable rendering      | Embed render success rate                    | Traces    | > 99%    |
+| Reliable rendering      | JS error-free session rate                   | RUM       | > 95%    |
+| Cost efficiency         | CDN cache hit rate                           | Inferred  | > 60%    |
+| Cost efficiency         | Function execution time (p95)                | Traces    | < 3s     |
+| Continuous validation   | Synthetic availability                       | Synthetic | > 99.5%  |
 
 ## Observability
 
@@ -62,12 +58,12 @@ Three layers of instrumentation feed into Dynatrace, each covering different KPI
 
 A RUM agent is injected in `index.html` and runs in every user's browser. It captures:
 
-- **Page load timing:** how long until the editor is interactive
-- **User action timing:** how long from keystroke to rendered preview
-- **JavaScript errors:** uncaught exceptions, failed API calls
+- **Visually complete time:** how long until the editor and preview are both rendered and usable
+- **User action duration:** the time from when a user finishes typing to when the preview image loads — the real "instant feedback" metric from the user's perspective, including network, debounce delay, and image decode
+- **JS error-free session rate:** percentage of sessions without JavaScript errors — more meaningful than raw error count because one broken session with many errors shouldn't look like many separate problems
 - **Session context:** browser, OS, geography, session duration
 
-This covers the **instant feedback** and **sharing** KPIs from the user's perspective. If preview latency degrades or the share button breaks, RUM surfaces it immediately with full session context.
+RUM is the source of truth for user experience. If preview latency degrades or rendering breaks, RUM surfaces it with full session context — including geographic distribution, so a regression affecting only certain regions doesn't hide behind a global p95.
 
 ### Backend — Distributed tracing
 
@@ -93,7 +89,7 @@ chart.generate
 | `screenshot.width`     | screenshot.capture | Rendered diagram dimensions     |
 | `screenshot.height`    | screenshot.capture | Rendered diagram dimensions     |
 
-This covers the **API response time** and **error rate** KPIs. The span breakdown reveals where time is spent — browser cold starts vs. actual rendering — and exception recording captures the full error context when renders fail.
+This covers the **API response time**, **function execution time**, and **embed render success rate** KPIs. The span breakdown reveals where time is spent — browser cold starts show up as outliers in `screenshot.launch_browser`, while actual rendering time is isolated in `screenshot.capture`. Exception recording captures the full error context when renders fail.
 
 The tracing setup degrades gracefully: if the OTLP endpoint or API token is missing, tracing silently disables and the function operates normally.
 
@@ -108,7 +104,7 @@ A Playwright test suite (`synthetic/simulate.ts`) runs on a 15-minute cron via G
 
 The synthetic tests identify as `SpriteBot/synthetic` in the user agent and generate both RUM sessions and API traces, so their results are visible across all three observability layers.
 
-This covers the **availability** and **cache hit rate** KPIs with continuous, automated signal.
+This covers the **synthetic availability** and **CDN cache hit rate** KPIs. Availability is the percentage of 5-minute intervals with a passing test — effectively the uptime number. Cache hit rate is inferred from the embed simulation scenario, which fetches the same diagrams repeatedly and measures whether responses come from the edge or the function.
 
 ## End-to-end trace flow
 
