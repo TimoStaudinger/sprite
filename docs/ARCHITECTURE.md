@@ -17,6 +17,8 @@ Sprite is a web-based Mermaid diagram editor with live preview and image export.
 | Hosting        | Vercel                                         |
 | Monitoring     | Playwright synthetic tests (GitHub Actions)    |
 
+![System overview](./architecture-overview.png)
+
 ## Design goals
 
 ### Instant feedback
