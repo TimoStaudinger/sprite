@@ -372,7 +372,9 @@ async function main() {
   console.log("\nDone. Check Dynatrace for new sessions and traces.");
 }
 
-main().catch((err) => {
-  console.error("Simulation failed:", err);
-  process.exit(1);
-});
+main()
+  .then(() => process.exit(0))
+  .catch((err) => {
+    console.error("Simulation failed:", err);
+    process.exit(1);
+  });
