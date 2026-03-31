@@ -298,42 +298,70 @@ async function scenarioShareFlow(page: Page) {
   }
 }
 
+async function fetchEmbed(code: string, label: string) {
+  const url = `${BASE_URL}/chart/${encode(code)}.png`;
+  console.log(`  Fetching embed: ${label}...`);
+  const start = Date.now();
+  try {
+    const res = await fetch(url);
+    const elapsed = Date.now() - start;
+    console.log(
+      `    ${res.status} ${res.statusText} — ${elapsed}ms — ${res.headers.get("content-type")}`
+    );
+  } catch (err) {
+    console.log(`    Error: ${err}`);
+  }
+  await randomDelay(500, 2000);
+}
+
+function randomInt(min: number, max: number) {
+  return Math.floor(min + Math.random() * (max - min + 1));
+}
+
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 async function scenarioEmbedSimulation() {
   console.log("\n=== Scenario: Embed Simulation (direct PNG fetch) ===");
 
-  const uniqueSeq = uniqueSequenceDiagram();
-  const uniqueState = uniqueStateDiagram();
+  // Generate a pool of unique diagrams for this run
+  const uniqueDiagrams = Array.from({ length: randomInt(3, 6) }, (_, i) =>
+    pick([uniqueSequenceDiagram, uniqueClassDiagram, uniqueStateDiagram, fixedSyntax])()
+  );
 
-  const diagrams: { name: string; code: string }[] = [
-    // initial fetches — populate CDN cache
-    { name: "default flowchart (likely cached)", code: defaultFlowchart },
-    { name: "unique sequence (cache miss)", code: uniqueSeq },
-    { name: "unique state (cache miss)", code: uniqueState },
+  // Phase 1: Initial fetches — cache misses
+  console.log("  Phase 1: Initial fetches (cache misses)...");
+  await fetchEmbed(defaultFlowchart, "default flowchart (likely cached)");
+  for (let i = 0; i < uniqueDiagrams.length; i++) {
+    await fetchEmbed(uniqueDiagrams[i], `unique diagram ${i + 1} (cache miss)`);
+  }
 
-    // immediate re-fetches — cache hits
-    { name: "default flowchart again (cache hit)", code: defaultFlowchart },
-    { name: "unique sequence again (cache hit)", code: uniqueSeq },
-    { name: "unique state again (cache hit)", code: uniqueState },
+  // Phase 2: Re-fetch everything — cache hits
+  console.log("  Phase 2: Re-fetches (cache hits)...");
+  const allDiagrams = [defaultFlowchart, ...uniqueDiagrams];
+  const hitCount = randomInt(allDiagrams.length, allDiagrams.length * 3);
+  for (let i = 0; i < hitCount; i++) {
+    await fetchEmbed(pick(allDiagrams), `cached diagram (hit ${i + 1}/${hitCount})`);
+  }
 
-    // one more miss then hit
-    { name: "another unique diagram (cache miss)", code: fixedSyntax() },
-    { name: "default flowchart 3rd time (cache hit)", code: defaultFlowchart },
-  ];
-
-  for (const { name, code } of diagrams) {
-    const url = `${BASE_URL}/chart/${encode(code)}.png`;
-    console.log(`  Fetching embed: ${name}...`);
-    const start = Date.now();
-    try {
-      const res = await fetch(url);
-      const elapsed = Date.now() - start;
-      console.log(
-        `    ${res.status} ${res.statusText} — ${elapsed}ms — ${res.headers.get("content-type")}`
-      );
-    } catch (err) {
-      console.log(`    Error: ${err}`);
+  // Phase 3: A few more unique ones — cache misses mixed with hits
+  console.log("  Phase 3: Mixed traffic...");
+  const extraMisses = randomInt(1, 3);
+  for (let i = 0; i < extraMisses; i++) {
+    const fresh = pick([uniqueSequenceDiagram, uniqueClassDiagram, uniqueStateDiagram])();
+    await fetchEmbed(fresh, `new diagram (cache miss)`);
+    // Immediately re-fetch for a hit
+    if (Math.random() > 0.3) {
+      await fetchEmbed(fresh, `same diagram (cache hit)`);
     }
-    await randomDelay(2000, 5000);
+  }
+
+  // Phase 4: Final burst of cached requests
+  const burstSize = randomInt(3, 8);
+  console.log(`  Phase 4: Final burst of ${burstSize} cached requests...`);
+  for (let i = 0; i < burstSize; i++) {
+    await fetchEmbed(pick(allDiagrams), `burst ${i + 1}/${burstSize} (cache hit)`);
   }
 }
 

@@ -1,0 +1,118 @@
+{
+  "name": "Sprite - Editor Flow",
+  "type": "BROWSER",
+  "frequencyMin": 15,
+  "enabled": true,
+  "script": {
+    "type": "availability",
+    "configuration": {
+      "device": {
+        "orientation": "landscape",
+        "deviceName": "Desktop"
+      }
+    },
+    "events": [
+      {
+        "type": "navigate",
+        "description": "Open Sprite editor",
+        "url": "https://sprite.link",
+        "wait": {
+          "waitFor": "css_selector",
+          "selector": "img[alt=\"Chart preview\"]",
+          "timeout": 30000
+        }
+      },
+      {
+        "type": "click",
+        "description": "Focus editor",
+        "target": {
+          "locators": [
+            { "type": "css", "value": ".monaco-editor .view-lines" }
+          ]
+        },
+        "wait": {
+          "waitFor": "network",
+          "timeout": 5000
+        }
+      },
+      {
+        "type": "keystrokes",
+        "description": "Select all and delete",
+        "textValue": "",
+        "simulatedKeys": [
+          { "type": "key", "value": "CONTROL+A" },
+          { "type": "key", "value": "BACKSPACE" }
+        ],
+        "wait": {
+          "waitFor": "network",
+          "timeout": 3000
+        }
+      },
+      {
+        "type": "keystrokes",
+        "description": "Type sequence diagram",
+        "textValue": "sequenceDiagram\n    participant User\n    participant Server\n    participant Database\n\n    User->>Server: POST /login\n    Server->>Database: SELECT user\n    Database-->>Server: user record\n    Server-->>User: 200 OK + token",
+        "wait": {
+          "waitFor": "css_selector",
+          "selector": "img[alt=\"Chart preview\"]",
+          "timeout": 30000
+        }
+      },
+      {
+        "type": "javascript",
+        "description": "Verify chart rendered",
+        "javaScript": "const img = document.querySelector('img[alt=\"Chart preview\"]'); if (!img || !img.complete || img.naturalWidth === 0) throw new Error('Chart did not render');"
+      },
+      {
+        "type": "keystrokes",
+        "description": "Select all and replace with class diagram",
+        "simulatedKeys": [
+          { "type": "key", "value": "CONTROL+A" },
+          { "type": "key", "value": "BACKSPACE" }
+        ],
+        "textValue": "classDiagram\n    class Animal {\n      +String name\n      +int age\n      +makeSound()\n    }\n    class Dog {\n      +fetch()\n    }\n    class Cat {\n      +purr()\n    }\n    Animal <|-- Dog\n    Animal <|-- Cat",
+        "wait": {
+          "waitFor": "css_selector",
+          "selector": "img[alt=\"Chart preview\"]",
+          "timeout": 30000
+        }
+      },
+      {
+        "type": "javascript",
+        "description": "Verify second chart rendered",
+        "javaScript": "const img = document.querySelector('img[alt=\"Chart preview\"]'); if (!img || !img.complete || img.naturalWidth === 0) throw new Error('Chart did not render');"
+      },
+      {
+        "type": "click",
+        "description": "Click Copy button to test share flow",
+        "target": {
+          "locators": [
+            { "type": "css", "value": "button" }
+          ]
+        },
+        "wait": {
+          "waitFor": "network",
+          "timeout": 5000
+        }
+      }
+    ]
+  },
+  "locations": [],
+  "anomalyDetection": {
+    "outageHandling": {
+      "globalOutage": true,
+      "globalOutagePolicy": {
+        "consecutiveRuns": 3
+      }
+    },
+    "loadingTimeThresholds": {
+      "enabled": true,
+      "thresholds": [
+        {
+          "type": "TOTAL",
+          "valueMs": 30000
+        }
+      ]
+    }
+  }
+}

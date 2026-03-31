@@ -24,3 +24,32 @@ jobs:
       - name: Run synthetic simulation
         working-directory: synthetic
         run: yarn simulate
+
+      - name: Report result to Dynatrace
+        if: always()
+        env:
+          DT_ENVIRONMENT_URL: ${{ secrets.DT_ENVIRONMENT_URL }}
+          DT_API_TOKEN: ${{ secrets.DT_API_TOKEN }}
+        run: |
+          STATUS="${{ job.status }}"
+          if [ "$STATUS" = "success" ]; then
+            EVENT_TYPE="CUSTOM_INFO"
+            TITLE="Synthetic test passed"
+          else
+            EVENT_TYPE="ERROR_EVENT"
+            TITLE="Synthetic test failed"
+          fi
+
+          curl -s -X POST "${DT_ENVIRONMENT_URL}/api/v2/events/ingest" \
+            -H "Authorization: Api-Token ${DT_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"eventType\": \"${EVENT_TYPE}\",
+              \"title\": \"${TITLE}\",
+              \"properties\": {
+                \"source\": \"github-actions\",
+                \"workflow\": \"synthetic\",
+                \"status\": \"${STATUS}\",
+                \"run_id\": \"${{ github.run_id }}\"
+              }
+            }"
