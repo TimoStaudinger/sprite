@@ -41,7 +41,7 @@ jobs:
             TITLE="Synthetic monitoring failed"
           fi
 
-          curl -sS -X POST "${DT_ENDPOINT}/api/v2/events/ingest" \
+          curl -sS --fail -X POST "${DT_ENDPOINT}/api/v2/events/ingest" \
             -H "Authorization: Api-Token ${DT_API_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "{
