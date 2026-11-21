@@ -42,7 +42,7 @@ jobs:
           fi
 
           curl -sS --fail -X POST "${DT_ENDPOINT}/api/v2/events/ingest" \
-            -H "Authorization: Api-Token ${DT_API_TOKEN}" \
+            -H "Authorization: Bearer ${DT_API_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "{
               \"eventType\": \"${EVENT_TYPE}\",
