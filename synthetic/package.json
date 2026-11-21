@@ -6,7 +6,7 @@
     "simulate:headed": "HEADED=1 tsx simulate.ts"
   },
   "dependencies": {
-    "playwright": "^1.52.0",
+    "playwright": "^1.65.1",
     "tsx": "^4.19.0"
   }
 }
